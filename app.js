@@ -29,9 +29,13 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", (_, res, next) => {
-  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 });
+// app.use("/uploads", (_, res, next) => {
+//   res.set("Access-Control-Allow-Origin", "*");
+//   next();
+// });
 app.use("/uploads", express.static("uploads"));
 
 mongoose
