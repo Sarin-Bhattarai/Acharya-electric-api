@@ -1,52 +1,18 @@
 var express = require("express");
 var router = express.Router();
 var multer = require("multer");
+const upload = multer();
 var Home = require("../models/home");
 var { wrapAsync } = require("../helper/catchHandler");
 
-//file or image upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./uploads/");
-  },
-
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "_" + file.originalname);
-  },
-});
-
-//filtering the requested file
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === "image/jpeg" ||
-    file.mimetype === "image/png" ||
-    file.mimetype === "image/jpg"
-  ) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-    console.log("Image should be in jpeg || png || jpg format");
-  }
-};
-
-//limiting the size of file
-const uploads = multer({
-  storage: storage,
-  limits: {
-    fileSize: 1024 * 1024 * 5,
-  },
-  fileFilter: fileFilter,
-}).fields([
-  { name: "image", maxCount: 1 },
-  { name: "icon", maxCount: 1 },
-]);
+const type = upload.none();
 
 //routes
 router.post(
   "/",
-  uploads,
+  type,
   wrapAsync(async (req, res) => {
-    if (!req.files || !req.files.image || !req.files.icon) {
+    if (!req.body.image || !req.body.icon) {
       return res.status(400).json({
         status: "fail",
         data: { image: "No image or icon selected" },
@@ -54,8 +20,8 @@ router.post(
     }
     const homeDetails = {
       title: req.body.title,
-      icon: req.files.icon[0].path,
-      image: req.files.image[0].path,
+      icon: req.body.icon,
+      image: req.body.image,
     };
     const homes = new Home(homeDetails);
     const result = await homes.save();
@@ -73,7 +39,7 @@ router.get(
 
 router.patch(
   "/:id",
-  uploads,
+  type,
   wrapAsync(async (req, res) => {
     const homeId = req.params.id;
     const home = await Home.findById(homeId);
@@ -83,20 +49,15 @@ router.patch(
       });
     }
 
-    if (req.files) {
-      if (req.files.image) {
-        home.image = req.files.image[0].path;
-      }
-      if (req.files.icon) {
-        home.icon = req.files.icon[0].path;
-      }
+    if (req.body.image) {
+      home.image = req.body.image;
     }
 
-    //Object.keys() to get an array of keys in req.body,
-    // and then use forEach() to update each key in home.
-    Object.keys(req.body).forEach((key) => {
-      home[key] = req.body[key];
-    });
+    if (req.body.icon) {
+      home.icon = req.body.icon;
+    }
+
+    Object.assign(home, req.body);
     await home.save();
     return res.json(home);
   })
