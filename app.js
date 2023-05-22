@@ -7,6 +7,7 @@ var logger = require("morgan");
 var cors = require("cors");
 var mongoose = require("mongoose");
 var helmet = require("helmet");
+const axios = require("axios");
 var { devErrorHandler } = require("./helper/catchHandler");
 
 var indexRouter = require("./routes/index");
@@ -21,7 +22,22 @@ app.use(cors({ origin: "*" }));
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
+app.get("/firebase-proxy", async (req, res) => {
+  try {
+    const response = await axios.get(
+      "https://firebasestorage.googleapis.com/v0/b/acharya-18b6a.appspot.com/o",
+      {
+        params: {
+          name: "homes/a2be711b-cd14-447d-8f8f-44749cf3903e",
+        },
+      }
+    );
 
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "An error occurred" });
+  }
+});
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
